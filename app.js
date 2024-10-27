@@ -3,8 +3,8 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv").config();
 const path = require("path"); // הוסף את מודול path להגשת קבצים סטטיים
-const userRouter = require("./routers/UserRouter");
-const guestRouter = require('./routers/GuestRouter');
+const userRouter = require("./routers/userRouter");
+const guestRouter = require('./routers/guestRouter');
 const eventRouter = require('./routers/eventRouter');
 
 const app = express();
