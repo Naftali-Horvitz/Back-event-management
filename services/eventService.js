@@ -33,8 +33,17 @@ const eventService = {
   async getEventsByHost(hostId) {
     try {
       const eventIds = await Event.distinct('_id', { hostId });
-      const events = await EventSummary.find({ eventId: { $in: eventIds } }).sort({ eventDate: 1 });
-
+      const events = await EventSummary.find({ eventId: { $in: eventIds } })
+        .sort({ eventDate: 1 })
+        .lean()
+        .then(events => events.map(event => ({
+          _id: event.eventId,
+          eventName: event.eventName,
+          date: event.eventDate,
+          totalGuests: event.totalGuests,
+          confirmedGuests: event.confirmedGuests
+        })));
+  
       return events;
     } catch (err) {
       throw new Error('Error fetching events');

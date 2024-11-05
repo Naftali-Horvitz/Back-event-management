@@ -10,6 +10,10 @@ const eventSummarySchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  eventDate: {           // הוספתי את שדה התאריך
+    type: Date,
+    required: true
+  },
   totalGuests: { 
     type: Number, 
     default: 0 

@@ -19,10 +19,21 @@ exports.createEvent = async (req, res) => {
 
 exports.getEvents = async (req, res) => {
   try {
+    // וידוא שיש userId
+    if (!req.user?.userId) {
+      return res.status(401).json({ msg: 'User ID not found' });
+    }
+
     const events = await eventService.getEventsByHost(req.user.userId);
+    
+    // בדיקה אם יש אירועים
+    if (!events || events.length === 0) {
+      return res.json([]); // מחזיר מערך ריק במקום null
+    }
+
     res.json(events);
   } catch (error) {
     console.error('Error fetching events:', error);
-    res.status(500).json({ msg: 'Server error' });
+    res.status(500).json({ msg: 'Error fetching events' });
   }
 };
