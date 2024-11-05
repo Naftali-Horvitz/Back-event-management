@@ -4,16 +4,31 @@ exports.createEvent = async (req, res) => {
   try {
     const eventData = {
       ...req.body,
-      hostId: req.user.userId, // מניח שה-userId מגיע מה-middleware של האימות
+      hostId: req.user.userId,
     };
+
     const savedEvent = await eventService.createEvent(eventData);
-    res.status(201).json({ msg: 'Event created successfully', eventId: savedEvent._id });
+    
+    return res.status(201).json({ 
+      success: true,
+      msg: 'Event created successfully', 
+      eventId: savedEvent._id 
+    });
+
   } catch (error) {
     console.error('Error creating event:', error);
+    
     if (error.message === 'All fields are required') {
-      return res.status(400).json({ msg: error.message });
+      return res.status(400).json({ 
+        success: false,
+        msg: error.message 
+      });
     }
-    res.status(500).json({ msg: 'Server error' });
+    
+    return res.status(500).json({ 
+      success: false,
+      msg: 'Server error' 
+    });
   }
 };
 
