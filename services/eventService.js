@@ -22,7 +22,8 @@ const eventService = {
     // יצירת רשומה חדשה בטבלת EventSummary
     const newEventSummary = new EventSummary({
       eventId: savedEvent._id,
-      eventName: savedEvent.eventName  // שים לב שיניתי מ-name ל-eventName
+      eventName: savedEvent.eventName,
+      eventDate: savedEvent.eventDate  // הוספת שדה חובה שחסר
     });
 
     await newEventSummary.save();
