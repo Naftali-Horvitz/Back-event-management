@@ -53,7 +53,7 @@ exports.getEvents = async (req, res) => {
   }
 };
 
-const getEventById = async (req, res) => {
+exports.getEventById = async (req, res) => {
   const { eventId } = req.params;
 
   try {
@@ -73,9 +73,4 @@ const getEventById = async (req, res) => {
     console.error('Error fetching event:', error);
     return res.status(500).send({ msg: 'שגיאה בשליפת האירוע' });
   }
-};
-
-module.exports = {
-  // ...other controller functions
-  getEventById,
 };

@@ -16,7 +16,6 @@ const eventService = {
       eventDescription,
       hostId,
     });
-
     const savedEvent = await newEvent.save();
 
     // יצירת רשומה חדשה בטבלת EventSummary
@@ -25,9 +24,7 @@ const eventService = {
       eventName: savedEvent.eventName,
       eventDate: savedEvent.eventDate  // הוספת שדה חובה שחסר
     });
-
     await newEventSummary.save();
-
     return savedEvent;
   },
 
@@ -44,7 +41,7 @@ const eventService = {
           totalGuests: event.totalGuests,
           confirmedGuests: event.confirmedGuests
         })));
-  
+
       return events;
     } catch (err) {
       throw new Error('Error fetching events');
@@ -54,17 +51,17 @@ const eventService = {
   async getEventById(eventId) {
     try {
       const event = await Event.findOne({ eventId });
-      
+
       if (!event) {
         throw new Error('אירוע לא נמצא');
       }
-  
+
       return event;
     } catch (error) {
       throw new Error(error.message);
     }
   },
-  
+
   async getEventSummary(eventId) {
     return await EventSummary.findOne({ eventId: eventId });
   },
