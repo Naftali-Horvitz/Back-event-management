@@ -52,13 +52,19 @@ const eventService = {
   },
 
   async getEventById(eventId) {
-    const event = await Event.findById(eventId);
-    if (!event) {
-      throw new Error("Event not found");
+    try {
+      const event = await Event.findOne({ eventId });
+      
+      if (!event) {
+        throw new Error('אירוע לא נמצא');
+      }
+  
+      return event;
+    } catch (error) {
+      throw new Error(error.message);
     }
-    return event;
   },
-
+  
   async getEventSummary(eventId) {
     return await EventSummary.findOne({ eventId: eventId });
   },

@@ -1,66 +1,78 @@
 const Guest = require('../models/guestModel');
-const {EventSummary} = require('../models/eventSummarySchema');
+const { EventSummary } = require('../models/eventSummarySchema');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
 require('dotenv').config();
 const fs = require('fs').promises;
 const path = require('path');
+
 const {
   validateName,
-  validateIdNumber,
   validatePhoneNumber,
   validateEmail,
 } = require("../validation");
+
 const createGuest = async (guestData) => {
-  const { email, name, phone, guestId , id, eventId} = guestData;
+  const { email, name, phone, eventId } = guestData;
+  
   try {
     validateName(name);
-    validateIdNumber(guestId);
     validatePhoneNumber(phone);
     validateEmail(email);
 
+    // בדיקה אם האורח כבר קיים באירוע
+    const existingGuest = await Guest.findOne({ phone, eventId });
+    if (existingGuest) {
+      throw new Error('מספר טלפון זה כבר רשום לאירוע');
+    }
+
     const newGuest = new Guest({
-      ...guestData,
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      phone: phone.trim(),
+      eventId,
     });
-  
+
     const savedGuest = await newGuest.save();
+    
     // עדכון טבלת EventSummary
     await EventSummary.findOneAndUpdate(
-      { eventId: newGuest.eventId },
+      { eventId: savedGuest.eventId },
       {
         $inc: {
-          totalGuests: 1,
-          confirmedGuests: savedGuest.status 
+          totalGuests: 1
         }
       }
     );
-    const qrCode = await generateQRCode(guestId, eventId);
-    await sendEmailWithQRCode(guestData.email, qrCode, id);
+
+    const qrCode = await generateQRCode(savedGuest.phone, savedGuest.eventId);
+    await sendEmailWithQRCode(savedGuest.email, qrCode, savedGuest.phone); 
 
     return savedGuest;
   } catch (error) {
+    if (error.code === 11000) { // MongoDB duplicate key error
+      throw new Error('מספר טלפון זה כבר רשום לאירוע');
+    }
     throw new Error(error.message);
   }
 };
 
-const generateQRCode = async (guestId, eventId) => {
+const generateQRCode = async (phone, eventId) => {
   try {
-    const qrData = JSON.stringify({ eventId, guestId });
+    const qrData = JSON.stringify({ eventId, phone });
     return await QRCode.toDataURL(qrData);
   } catch (error) {
-    console.log('Error generating QR code:', error);
-    throw { status: 500, message: 'Error generating QR code' };
+    console.error('Error generating QR code:', error);
+    throw { status: 500, message: 'שגיאה ביצירת קוד QR' };
   }
 };
-const sendEmailWithQRCode = async (toEmail, qrCode, id) => {
+
+const sendEmailWithQRCode = async (toEmail, qrCode, phone) => { 
   const tempDir = path.join(__dirname, '../temp');
-  const qrFilePath = path.join(tempDir, `${id}.png`);
+  const qrFilePath = path.join(tempDir, `${phone}.png`);
 
   try {
-    // וודא שהתיקייה temp קיימת
     await fs.mkdir(tempDir, { recursive: true });
-
-    // המרת ה-Data URL לקובץ
     const qrBuffer = Buffer.from(qrCode.split(',')[1], 'base64');
     await fs.writeFile(qrFilePath, qrBuffer);
 
@@ -93,14 +105,13 @@ const sendEmailWithQRCode = async (toEmail, qrCode, id) => {
 
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('Error sending email:');
-    throw { status: 500, message: 'Error sending email' };
+    console.error('Error sending email:', error);
+    throw { status: 500, message: 'שגיאה בשליחת המייל' };
   } finally {
-    // נסה למחוק את הקובץ הזמני, אבל אל תזרוק שגיאה אם זה נכשל
     try {
       await fs.unlink(qrFilePath);
     } catch (unlinkError) {
-      console.error('Error deleting temporary file:');
+      console.error('Error deleting temporary file:', unlinkError);
     }
   }
 };

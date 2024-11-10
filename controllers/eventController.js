@@ -52,3 +52,30 @@ exports.getEvents = async (req, res) => {
     res.status(500).json({ msg: 'Error fetching events' });
   }
 };
+
+const getEventById = async (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    // בדיקה שהתקבל ID
+    if (!eventId) {
+      return res.status(400).send({ msg: 'נדרש ID של אירוע' });
+    }
+
+    const event = await eventService.getEventById(eventId);
+    return res.status(200).send(event);
+    
+  } catch (error) {
+    if (error.message === 'אירוע לא נמצא') {
+      return res.status(404).send({ msg: error.message });
+    }
+    
+    console.error('Error fetching event:', error);
+    return res.status(500).send({ msg: 'שגיאה בשליפת האירוע' });
+  }
+};
+
+module.exports = {
+  // ...other controller functions
+  getEventById,
+};

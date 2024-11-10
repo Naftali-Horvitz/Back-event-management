@@ -1,13 +1,38 @@
 const mongoose = require('mongoose');
 
 const guestSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  guestId: { type: String, required: true },
-  email: { type: String, required: true },
-  phone: { type: String, required: true },
-  eventId: { type: String, required: true },
-  status: { type: Boolean, required: false, default: false },
-  // ... כל שדה אחר שאתה צריך
+  name: { 
+    type: String, 
+    required: true,
+    trim: true
+  },
+  email: { 
+    type: String, 
+    required: true,
+    lowercase: true,
+    trim: true
+  },
+  phone: { 
+    type: String, 
+    required: true,
+    trim: true,
+    unique: true
+  },
+  eventId: { 
+    type: String, 
+    required: true 
+  },
+  status: {
+    type: Boolean,
+    default: false
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
+
+// אינדקס מורכב עבור טלפון וeventId
+guestSchema.index({ phone: 1, eventId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Guest', guestSchema, 'guests');
