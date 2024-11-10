@@ -5,7 +5,7 @@ const authenticateToken = require('../Middleware/authMiddleware');
 
 router.post("/create-event", authenticateToken,createEvent);
 router.get("/view-events", authenticateToken, getEvents);
-router.get("/view-events/:eventId", authenticateToken, getEventById);  // הוספת Route חדש
+router.get("/view-events", authenticateToken, getEventById);  // הוספת Route חדש
 
 
 
