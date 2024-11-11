@@ -8,5 +8,4 @@ router.get("/view-events", authenticateToken, getEvents);
 router.get("/:eventId", authenticateToken, getEventById);  // הוספת Route חדש
 
 
-
 module.exports = router;
