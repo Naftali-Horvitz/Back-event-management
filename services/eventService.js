@@ -50,12 +50,11 @@ const eventService = {
 
   async getEventById(eventId) {
     try {
-      const event = await Event.findOne({ eventId });
+      const event = await Event.findOne({ _id: eventId });
 
       if (!event) {
         throw new Error('אירוע לא נמצא');
       }
-
       return event;
     } catch (error) {
       throw new Error(error.message);
