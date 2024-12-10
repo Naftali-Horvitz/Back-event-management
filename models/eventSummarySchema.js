@@ -10,7 +10,7 @@ const eventSummarySchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
-  eventDate: {           // הוספתי את שדה התאריך
+  eventDate: {       
     type: Date,
     required: true
   },
