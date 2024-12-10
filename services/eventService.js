@@ -50,7 +50,8 @@ const eventService = {
 
   async getEventById(eventId) {
     try {
-      const event = await Event.findOne({ _id: eventId });
+      const eventIds = await Event.distinct('_id', { eventId });
+      const event = await EventSummary.find({ eventId: { $in: eventIds } })
 
       if (!event) {
         throw new Error('אירוע לא נמצא');
