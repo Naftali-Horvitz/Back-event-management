@@ -3,15 +3,16 @@ const { EventSummary } = require('../models/eventSummarySchema');
 
 const eventService = {
   async createEvent(eventData) {
-    const { eventName, eventDate, eventLocation, eventDescription, hostId } = eventData;
+    const { eventName, eventDate, eventTime, eventLocation, eventDescription, hostId } = eventData;
 
-    if (!eventName || !eventDate || !eventLocation || !eventDescription || !hostId) {
+    if (!eventName || !eventDate || eventTime || !eventLocation || !eventDescription || !hostId) {
       throw new Error('All fields are required');
     }
 
     const newEvent = new Event({
       eventName,
       eventDate,
+      eventTime,
       eventLocation,
       eventDescription,
       hostId,
@@ -38,6 +39,7 @@ const eventService = {
           _id: event.eventId,
           eventName: event.eventName,
           date: event.eventDate,
+          time: event.eventTime,
           totalGuests: event.totalGuests,
           confirmedGuests: event.confirmedGuests
         })));
