@@ -6,7 +6,7 @@ const path = require("path"); // הוסף את מודול path להגשת קבצ
 const userRouter = require("./routers/userRouter");
 const guestRouter = require('./routers/guestRouter');
 const eventRouter = require('./routers/eventRouter');
-
+const Guest = require('./models/guestModel');
 const app = express();
 const port = process.env.PORT || 5000;
 

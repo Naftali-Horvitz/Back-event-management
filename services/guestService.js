@@ -14,7 +14,7 @@ const {
 
 const createGuest = async (guestData) => {
   const { email, name, phone, eventId } = guestData;
-  
+
   try {
     validateName(name);
     validatePhoneNumber(phone);
@@ -34,7 +34,7 @@ const createGuest = async (guestData) => {
     });
 
     const savedGuest = await newGuest.save();
-    
+
     // עדכון טבלת EventSummary
     await EventSummary.findOneAndUpdate(
       { eventId: savedGuest.eventId },
@@ -46,7 +46,7 @@ const createGuest = async (guestData) => {
     );
 
     const qrCode = await generateQRCode(savedGuest.phone, savedGuest.eventId);
-    await sendEmailWithQRCode(savedGuest.email, qrCode, savedGuest.phone); 
+    await sendEmailWithQRCode(savedGuest.email, qrCode, savedGuest.phone);
 
     return savedGuest;
   } catch (error) {
@@ -56,6 +56,64 @@ const createGuest = async (guestData) => {
     throw new Error(error.message);
   }
 };
+
+async function saveGuestList(eventId, guests) {
+  try {
+    const guestsToSave = guests.map(guest => ({
+      eventId,
+      name: guest.fullName,
+      email: guest.email,
+      phone: guest.phone,
+      createdAt: new Date()
+    }));
+
+    const result = await Guest.insertMany(guestsToSave, { ordered: false });
+    // אם הכל נשמר בהצלחה
+    return {
+      savedCount: result.length,
+      totalSubmitted: guests.length,
+      message: 'נשמרו כל המוזמנים בהצלחה'
+    };
+
+  } catch (error) {
+    // console.error('Error in insertMany:', error);
+    if (error.name === 'MongoBulkWriteError' && error.writeErrors) {
+      const duplicateErrors = error.writeErrors.length;
+      const savedCount = guests.length  - duplicateErrors;
+      if (savedCount === 0) {
+        throw {
+          savedCount: 0,
+          totalSubmitted: guests.length,
+          error: 'לא נמצאו אורחים לשמירה. כולם קיימים כבר במערכת.',
+          duplicateErrors
+        };
+      }
+
+         // מציאת האינדקסים של האורחים שלא נשמרו
+      const failedIndexes = error.writeErrors.map(err => err.index);
+      // האורחים שלא נשמרו בפועל
+      const unGuestsSaved = guests.filter((_, index) => failedIndexes.includes(index));
+    // האורחים שכן נשמרו בפועל
+    // const guestsSaved = guests.filter((_, index) => !failedIndexes.includes(index));
+      throw {
+        savedCount,
+        totalSubmitted: guests.length,
+        error: 'חלק מהמוזמנים כבר קיימים במערכת.',
+        duplicateErrors,
+        unGuestsSaved
+      };
+    }
+
+    // אם זו שגיאה אחרת
+    throw {
+      savedCount: 0,
+      totalSubmitted: guests.length,
+      error: error.message || 'אירעה שגיאה בשמירת המוזמנים.',
+    };
+  }
+
+}
+
 
 const generateQRCode = async (phone, eventId) => {
   try {
@@ -67,7 +125,7 @@ const generateQRCode = async (phone, eventId) => {
   }
 };
 
-const sendEmailWithQRCode = async (toEmail, qrCode, phone) => { 
+const sendEmailWithQRCode = async (toEmail, qrCode, phone) => {
   const tempDir = path.join(__dirname, '../temp');
   const qrFilePath = path.join(tempDir, `${phone}.png`);
 
@@ -118,4 +176,5 @@ const sendEmailWithQRCode = async (toEmail, qrCode, phone) => {
 
 module.exports = {
   createGuest,
+  saveGuestList,
 };
