@@ -1,5 +1,5 @@
 
-export const AuthErrors = {
+const AuthErrors = {
   USER_ALREADY_EXISTS: {
     code: "AUTH_004",
     message: "המשתמש עם האימייל הזה כבר קיים",
@@ -18,7 +18,7 @@ export const AuthErrors = {
     },
   };
   
-export function catchError(error){
+const catchError = (error)=> {
 
 const knownErrorCodes = Object.values(AuthErrors).map(e => e.code);
 if (knownErrorCodes.includes(error.code)) {
@@ -28,4 +28,9 @@ if (knownErrorCodes.includes(error.code)) {
     throw new Error(error);
   }
     
+}
+
+module.exports = {
+  AuthErrors,
+  catchError,
 }
