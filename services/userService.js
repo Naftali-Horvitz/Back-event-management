@@ -2,9 +2,9 @@ const { User } = require("../models/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sanitize = require("express-mongo-sanitize");
+const { AuthErrors, catchError} = require("../config/errorsMessages")
 const {
   validateName,
-  validateIdNumber,
   validatePhoneNumber,
   validateEmail,
   validatePassword,
@@ -13,10 +13,9 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_TIME = 30 * 60 * 1000; // 30 דקות במיליסקנדות
 
 exports.createUser = async (userData) => {
-  const { email, password, fullName, phone, userId } = userData;
+  const { email, password, fullName, phone } = userData;
   try {
     validateName(fullName);
-    validateIdNumber(userId);
     validatePhoneNumber(phone);
     validateEmail(email);
     validatePassword(password);
@@ -24,8 +23,9 @@ exports.createUser = async (userData) => {
     // בדיקה אם המשתמש כבר קיים
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      throw new Error("המשתמש עם האימייל הזה כבר קיים");
-    }
+      const error = new Error(AuthErrors.USER_ALREADY_EXISTS.message);
+      error.code = AuthErrors.USER_ALREADY_EXISTS.code;
+      throw error;    }
 
     // הצפנת הסיסמה
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -33,7 +33,6 @@ exports.createUser = async (userData) => {
     // יצירת משתמש חדש
     const newUser = new User({
       fullName,
-      userId,
       phone,
       password: hashedPassword,
       email,
@@ -46,12 +45,12 @@ exports.createUser = async (userData) => {
 
     // יצירת JWT
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "24h",
     });
 
     return { user: userWithoutPassword, token };
   } catch (error) {
-    throw new Error(error.message);
+    catchError(error);
   }
 };
 
@@ -59,13 +58,17 @@ exports.findUserLogin = async (email, password) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      throw new Error("משתמש לא קיים או סיסמה שגויה");
+      const error = new Error(AuthErrors.USER_NOT_FOUND_OR_WRONG_PASSWORD.message);
+      error.code = AuthErrors.USER_NOT_FOUND_OR_WRONG_PASSWORD.code;
+      throw error;
+
     }
 
     // בדיקת נעילת חשבון
     if (user.lockUntil && user.lockUntil > Date.now()) {
-      throw new Error("החשבון נעול. נסה שוב מאוחר יותר");
-    }
+      const error = new Error(AuthErrors.ACCOUNT_LOCKED.message);
+      error.code = AuthErrors.ACCOUNT_LOCKED.code;
+      throw error;    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -75,8 +78,9 @@ exports.findUserLogin = async (email, password) => {
         user.lockUntil = Date.now() + LOCK_TIME;
       }
       await user.save();
-      throw new Error("סיסמה שגויה");
-    }
+      const error = new Error(AuthErrors.WRONG_PASSWORD.message);
+      error.code = AuthErrors.WRONG_PASSWORD.code;
+      throw error;    }
 
     // איפוס ניסיונות כניסה לאחר התחברות מוצלחת
     if (user.loginAttempts > 0 || user.lockUntil) {
@@ -99,6 +103,6 @@ exports.findUserLogin = async (email, password) => {
 
     return { user: userWithoutSensitiveInfo, token };
   } catch (error) {
-    throw new Error("שגיאה ברישום. נסה שוב מאוחר יותר.");
+    catchError(error);
   }
 };
